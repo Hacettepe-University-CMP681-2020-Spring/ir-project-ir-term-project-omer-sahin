@@ -1,16 +1,14 @@
+import os
+import pickle
 import re
+import sys
+
 import pandas as pd
 from urllib.parse import unquote
 
 from trec_car import read_data
 
-
-class Document:
-
-    def __init__(self, query, title):
-        self.query = query
-        self.title = title
-        self.article_list = list()
+from index.entity import WikiArticle
 
 
 class Indexer:
@@ -20,7 +18,6 @@ class Indexer:
         self.article_title_map = dict()
         self.paragraph_map = dict()
         self.article_list = dict()
-        self.document_list = dict()
 
     def create_title_query_map(self, query_path):
         query_df = pd.read_csv(query_path)
@@ -65,32 +62,39 @@ class Indexer:
         self.create_article_title_map(qrel_path)
         self.create_paragraph_map(paragraph_path)
 
-        num_paragraph = len(self.paragraph_map)
-        for i, article_id in enumerate(self.paragraph_map.keys()):
-            print('[%6d/%d] : ' % (i+1, num_paragraph), end='')
+        for i, paragraph_id in enumerate(self.paragraph_map.keys()):
             try:
-                title = self.article_title_map[article_id]
+                title = self.article_title_map[paragraph_id]
                 queries = self.title_query_map[title]
 
                 if title not in self.article_list:
-                    self.article_list[title] = list()
+                    self.article_list[title] = WikiArticle(title=title)
 
-                self.article_list[title].append(self.paragraph_map[article_id])
+                self.article_list[title].add_queries(queries=queries)
 
-                for query in queries:
-                    qid = hash(query)
-                    if qid not in self.document_list:
-                        document = Document(title=title, query=query)
-                        self.document_list[qid] = document
+                self.article_list[title].add_paragraph(pid=paragraph_id,
+                                                       text=self.paragraph_map[paragraph_id])
 
-                    document = self.document_list[qid]
-                    document.article_list = self.article_list[title]
+            except Exception:
+                continue
 
-                print('successful')
+        print('Number of title in Jeopardy   :', len(self.title_query_map))
+        print('Number of article in TREC-CAR :', len(self.article_title_map))
+        print('Number of matched article     :', len(self.article_list))
 
-            except Exception as e:
-                print(e)
+        # Free memory
+        del self.title_query_map
+        del self.article_title_map
+        del self.paragraph_map
 
-    def iterate_documents(self):
-        for document in self.document_list.values():
-            yield document
+    def save(self, path):
+        if not os.path.exists(path):
+            os.makedirs(path)
+
+        with open(path + '/articles.pickle', 'wb') as handle:
+            pickle.dump(self.article_list, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    def load(self, path):
+        with open(path + '/articles.pickle', 'rb') as handle:
+            self.article_list = pickle.load(handle)
+

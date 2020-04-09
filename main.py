@@ -6,21 +6,29 @@ if __name__ == '__main__':
     qrel_path = '../query_reformulation_dataset/trec_car/base.train.cbor-article.qrels'
     paragraph_path = '../query_reformulation_dataset/trec_car/base.train.cbor-paragraphs.cbor'
 
+    output_path = '../query_reformulation_dataset/indexed'
+
     qta_indexer = Indexer()
     qta_indexer.index_documents(query_path=query_path,
                                 qrel_path=qrel_path,
                                 paragraph_path=paragraph_path)
 
-    for doc in qta_indexer.iterate_documents():
-        print(doc.title)
-        print(doc.query)
-        print('Number of article:', len(doc.article_list))
-        print('-'*50)
+    qta_indexer.save(path=output_path)
+    # qta_indexer.load(path=output_path)
 
-    count = 0
+    num_article_gte_10 = 0
+    num_query_gte_10 = 0
     for title in qta_indexer.article_list.keys():
-        for article in qta_indexer.article_list[title]:
-            print(title, ':', article)
-            count += 1
+        article = qta_indexer.article_list[title]
+        num_query = len(article.query_list)
+        num_paragraph = len(article.paragraph_list)
 
-    print('Number of articles:', count)
+        if num_paragraph >= 10:
+            num_article_gte_10 += 1
+            num_query_gte_10 += num_query
+
+        print('%-20s -> Queries: %3d, Paragraphs: %3d' % (article.title, num_query, num_paragraph))
+
+    print('Number of article with 10+ paragraphs :', num_article_gte_10)
+    print('Number of query with 10+ paragraphs   :', num_query_gte_10)
+
