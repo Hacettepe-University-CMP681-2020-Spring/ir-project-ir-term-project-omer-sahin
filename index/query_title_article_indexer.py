@@ -6,6 +6,7 @@ import sys
 import pandas as pd
 from urllib.parse import unquote
 
+from sklearn.feature_extraction.text import TfidfVectorizer
 from trec_car import read_data
 
 from index.article import WikiArticle
@@ -86,6 +87,22 @@ class Indexer:
         del self.title_query_map
         del self.article_title_map
         del self.paragraph_map
+
+    def extract_keywords(self, top_words=50):
+        vectorizer = TfidfVectorizer(stop_words='english')
+        text_list = list()
+        for title, article in self.article_list.items():
+            text = ' '.join(article.paragraph_list.values())
+            text_list.append(text)
+
+        tf_idf = vectorizer.fit_transform(text_list)
+        vocabulary = vectorizer.get_feature_names()
+
+        for i, (title, article) in enumerate(self.article_list.items()):
+            vector = tf_idf[i].toarray()
+            indices = (-vector).argsort()
+            keywords = [vocabulary[i] for i in indices[0, :top_words]]
+            article.set_keywords(keywords=keywords)
 
     def save(self, path):
         if not os.path.exists(path):
