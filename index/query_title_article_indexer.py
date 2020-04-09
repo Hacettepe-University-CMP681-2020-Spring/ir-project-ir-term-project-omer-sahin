@@ -8,7 +8,7 @@ from urllib.parse import unquote
 
 from trec_car import read_data
 
-from index.entity import WikiArticle
+from index.article import WikiArticle
 
 
 class Indexer:
