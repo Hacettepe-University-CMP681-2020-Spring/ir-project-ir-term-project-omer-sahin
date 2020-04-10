@@ -1,7 +1,6 @@
 import os
 import pickle
 import re
-import sys
 
 import pandas as pd
 from urllib.parse import unquote
@@ -9,7 +8,7 @@ from urllib.parse import unquote
 from sklearn.feature_extraction.text import TfidfVectorizer
 from trec_car import read_data
 
-from index.article import WikiArticle
+from index.article import WikiArticle, Query
 
 
 class Indexer:
@@ -19,6 +18,7 @@ class Indexer:
         self.article_title_map = dict()
         self.paragraph_map = dict()
         self.article_list = dict()
+        self.tfidf_vectorizer = TfidfVectorizer(stop_words='english')
 
     def create_title_query_map(self, query_path):
         query_df = pd.read_csv(query_path)
@@ -73,8 +73,7 @@ class Indexer:
 
                 self.article_list[title].add_queries(queries=queries)
 
-                self.article_list[title].add_paragraph(pid=paragraph_id,
-                                                       text=self.paragraph_map[paragraph_id])
+                self.article_list[title].add_paragraph(paragraph=self.paragraph_map[paragraph_id])
 
             except Exception:
                 continue
@@ -88,21 +87,30 @@ class Indexer:
         del self.article_title_map
         del self.paragraph_map
 
-    def extract_keywords(self, top_words=50):
-        vectorizer = TfidfVectorizer(stop_words='english')
+    def inverse_article_frequency(self):
         text_list = list()
         for title, article in self.article_list.items():
-            text = ' '.join(article.paragraph_list.values())
+            text = ' '.join(article.paragraph_list)
             text_list.append(text)
 
-        tf_idf = vectorizer.fit_transform(text_list)
-        vocabulary = vectorizer.get_feature_names()
+        self.tfidf_vectorizer.fit(text_list)
 
-        for i, (title, article) in enumerate(self.article_list.items()):
-            vector = tf_idf[i].toarray()
-            indices = (-vector).argsort()
-            keywords = [vocabulary[i] for i in indices[0, :top_words]]
-            article.set_keywords(keywords=keywords)
+    def get_paragraph_list(self, n=0):
+        paragraph_list = list()
+        for title, article in self.article_list.items():
+            if len(article.paragraph_list) >= n:
+                paragraph_list += article.paragraph_list
+
+        return paragraph_list
+
+    def get_query_list(self, n=10):
+        query_list = list()
+        for title, article in self.article_list.items():
+            if len(article.paragraph_list) >= n:
+                for query in article.query_list:
+                    query_list.append(Query(query=query, article=article))
+
+        return query_list
 
     def save(self, path):
         if not os.path.exists(path):
