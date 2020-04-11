@@ -1,17 +1,37 @@
 import os
 import pickle
 import re
-
-import pandas as pd
 from urllib.parse import unquote
 
+import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from trec_car import read_data
 
-from index.article import WikiArticle, Query
+from query import Query
 
 
-class Indexer:
+class WikiArticle:
+
+    def __init__(self, title):
+        self.title = title
+        self.query_list = set()
+        self.paragraph_list = set()
+
+    def add_queries(self, queries):
+        for query in queries:
+            self.query_list.add(query)
+
+    def add_paragraph(self, paragraph):
+        self.paragraph_list.add(paragraph)
+
+    def recall_at(self, retrieved_documents):
+        return len(self.paragraph_list.intersection(retrieved_documents)) / len(self.paragraph_list)
+
+    def precision_at(self, retrieved_documents):
+        return len(self.paragraph_list.intersection(retrieved_documents)) / len(retrieved_documents)
+
+
+class QTAIndexer:
 
     def __init__(self):
         self.title_query_map = dict()
@@ -33,6 +53,10 @@ class Indexer:
                 title = title.lower()
                 title = title.strip('"')
                 title = re.sub(pattern='^(a|an|the) ', repl='', string=title)
+
+                # Skip all digit titles
+                if title.isdigit():
+                    continue
 
                 if title not in self.title_query_map:
                     self.title_query_map[title.lower()] = list()
@@ -58,11 +82,13 @@ class Indexer:
             self.paragraph_map[page.para_id] = page.get_text()
 
     def index_documents(self, query_path, qrel_path, paragraph_path):
-
+        print('Title-Query mapping...')
         self.create_title_query_map(query_path)
+        print('Article-Title mapping...')
         self.create_article_title_map(qrel_path)
+        print('Paragraph mapping...')
         self.create_paragraph_map(paragraph_path)
-
+        print('Article-[Paragraphs+Queries] indexing...')
         for i, paragraph_id in enumerate(self.paragraph_map.keys()):
             try:
                 title = self.article_title_map[paragraph_id]
@@ -112,14 +138,13 @@ class Indexer:
 
         return query_list
 
-    def save(self, path):
+    def save_articles(self, path):
         if not os.path.exists(path):
             os.makedirs(path)
 
         with open(path + '/articles.pickle', 'wb') as handle:
             pickle.dump(self.article_list, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-    def load(self, path):
+    def load_articles(self, path):
         with open(path + '/articles.pickle', 'rb') as handle:
             self.article_list = pickle.load(handle)
-
