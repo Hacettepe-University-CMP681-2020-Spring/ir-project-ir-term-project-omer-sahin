@@ -19,8 +19,7 @@ class SearchEngine:
 
     def __init__(self, corpus):
         self.corpus = corpus
-        tokenized_corpus = tokenize(corpus)
-        self.bm25 = BM25Okapi(tokenized_corpus)
+        self.bm25 = BM25Okapi(corpus, tokenizer=tokenize)
 
     def get_top_documents(self, query, top_k=10):
         tokenized_query = tokenize(query.query)

@@ -2,6 +2,7 @@ import os
 import pickle
 
 import numpy as np
+from multiprocessing import Pool, cpu_count
 from search_engine.search import SearchEngine
 
 
@@ -14,13 +15,13 @@ class Query:
         self.base_recall = None
         self.base_precision = None
 
-    def extract_keywords(self, retrieved_documents, tfidf_vectorizer):
+    def extract_keywords(self, retrieved_documents, tfidf_vectorizer, keyword_number=20):
         vocabulary = tfidf_vectorizer.get_feature_names()
         text = ' '.join(retrieved_documents)
         features = tfidf_vectorizer.transform([text])
         vector = features[0].toarray()
         indices = (-vector).argsort()
-        self.keywords = [vocabulary[i] for i in indices[0, :20]]
+        self.keywords = [vocabulary[i] for i in indices[0, :keyword_number]]
 
     def calc_base_precision_recall(self, retrieved_documents):
         self.base_precision, self.base_recall = self.calc_precision_recall(retrieved_documents)
@@ -35,27 +36,45 @@ class Query:
 
 class Baseline:
 
-    def __init__(self, qta_indexer):
+    def __init__(self, qta_indexer, min_paragraph_number=20, top_document_number=10, keyword_number=20):
         self.qta_indexer = qta_indexer
-        self.query_list = self.qta_indexer.get_query_list(n=20)
-        self.corpus = self.qta_indexer.get_paragraph_list(n=20)
+        self.top_document_number = top_document_number
+        self.keyword_number = keyword_number
+
+        self.query_list = self.qta_indexer.get_query_list(min_paragraph=min_paragraph_number)
+        self.corpus = self.qta_indexer.get_paragraph_list(min_paragraph=min_paragraph_number)
         self.search_engine = SearchEngine(corpus=self.corpus)
 
+        self.query_number = len(self.query_list)
+
     def search_queries(self):
-        precisions = np.zeros(shape=(len(self.query_list)))
-        recalls = np.zeros(shape=(len(self.query_list)))
-        for i, query in enumerate(self.query_list):
-            print('Searching - [%3d/%d]...  ' % (i+1, len(self.query_list)), end='')
-            top_documents = self.search_engine.get_top_documents(query=query, top_k=10)
-            query.extract_keywords(retrieved_documents=top_documents,
-                                   tfidf_vectorizer=self.qta_indexer.tfidf_vectorizer)
-            precision, recall = query.calc_base_precision_recall(retrieved_documents=top_documents)
-            print('P:%.5f, R:%.5f' % (precision, recall), end='')
-            precisions[i] = precision
-            recalls[i] = recall
-            print('\t\tdone')
-        print('Avg. Precision :', precisions.mean())
-        print('Avg. Recall    :', recalls.mean())
+        pool = Pool(cpu_count())
+        precision_recall = pool.map(self.search_base_query, enumerate(self.query_list))
+        pool.close()
+        pool.join()
+
+        precision_recall = np.asarray(precision_recall)
+        print('Avg. Precision :', precision_recall[:, 0].mean())
+        print('Avg. Recall    :', precision_recall[:, 1].mean())
+
+    def search_base_query(self, query_tuple):
+        index, query = query_tuple
+        top_documents = self.search_engine.get_top_documents(query=query, top_k=self.top_document_number)
+        query.extract_keywords(retrieved_documents=top_documents,
+                               tfidf_vectorizer=self.qta_indexer.tfidf_vectorizer,
+                               keyword_number=self.keyword_number)
+        precision, recall = query.calc_base_precision_recall(retrieved_documents=top_documents)
+        print('Searching [%5d/%d] - P:%.5f, R:%.5f  < %s >' %
+              (index+1, self.query_number, precision, recall, query.query))
+        return precision, recall
+
+    def get_query_list(self, min_precision=0, min_recall=0):
+        query_list = list()
+        for query in self.query_list:
+            if query.base_precision > min_precision and query.base_recall > min_recall:
+                query_list.append(query)
+
+        return query_list
 
     def save_queries(self, path):
         if not os.path.exists(path):

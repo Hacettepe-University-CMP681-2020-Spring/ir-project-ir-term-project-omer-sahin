@@ -72,7 +72,10 @@ class QTAIndexer:
                 article_id = token[2]
 
                 title = unquote(token[0])
-                title = title[7:title.find('/')]
+                title = title[7:]
+                if '/' in title:
+                    continue
+
                 title = title.lower()
 
                 self.article_title_map[article_id] = title
@@ -121,18 +124,18 @@ class QTAIndexer:
 
         self.tfidf_vectorizer.fit(text_list)
 
-    def get_paragraph_list(self, n=0):
+    def get_paragraph_list(self, min_paragraph=20):
         paragraph_list = list()
         for title, article in self.article_list.items():
-            if len(article.paragraph_list) >= n:
+            if len(article.paragraph_list) >= min_paragraph:
                 paragraph_list += article.paragraph_list
 
         return paragraph_list
 
-    def get_query_list(self, n=10):
+    def get_query_list(self, min_paragraph=20):
         query_list = list()
         for title, article in self.article_list.items():
-            if len(article.paragraph_list) >= n:
+            if len(article.paragraph_list) >= min_paragraph:
                 for query in article.query_list:
                     query_list.append(Query(query=query, article=article))
 
