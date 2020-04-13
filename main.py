@@ -24,3 +24,11 @@ if __name__ == '__main__':
     print('Corpus size :', len(baseline.corpus))
     baseline.search_queries()
     baseline.save_queries(path=output_path)
+    baseline.load_queries(path=output_path)
+
+    query_list = baseline.get_query_list()
+    print('Usable query number:', len(query_list))
+    for query in query_list:
+        print('P:%.5f, R:%.5f  < %s >' % (query.base_precision, query.base_recall, query.query))
+        print('\tKeywords:', query.keywords)
+

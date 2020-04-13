@@ -21,7 +21,7 @@ class Query:
         features = tfidf_vectorizer.transform([text])
         vector = features[0].toarray()
         indices = (-vector).argsort()
-        self.keywords = [vocabulary[i] for i in indices[0, :keyword_number]]
+        self.keywords = [(features[0, i], vocabulary[i]) for i in indices[0, :keyword_number]]
 
     def calc_base_precision_recall(self, retrieved_documents):
         self.base_precision, self.base_recall = self.calc_precision_recall(retrieved_documents)
@@ -49,13 +49,9 @@ class Baseline:
 
     def search_queries(self):
         pool = Pool(cpu_count())
-        precision_recall = pool.map(self.search_base_query, enumerate(self.query_list))
+        self.query_list = pool.map(self.search_base_query, enumerate(self.query_list))
         pool.close()
         pool.join()
-
-        precision_recall = np.asarray(precision_recall)
-        print('Avg. Precision :', precision_recall[:, 0].mean())
-        print('Avg. Recall    :', precision_recall[:, 1].mean())
 
     def search_base_query(self, query_tuple):
         index, query = query_tuple
@@ -66,7 +62,7 @@ class Baseline:
         precision, recall = query.calc_base_precision_recall(retrieved_documents=top_documents)
         print('Searching [%5d/%d] - P:%.5f, R:%.5f  < %s >' %
               (index+1, self.query_number, precision, recall, query.query))
-        return precision, recall
+        return query
 
     def get_query_list(self, min_precision=0, min_recall=0):
         query_list = list()
