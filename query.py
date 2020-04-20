@@ -1,7 +1,6 @@
 import os
 import pickle
 
-import numpy as np
 from multiprocessing import Pool, cpu_count
 from search_engine.search import SearchEngine
 
@@ -67,7 +66,7 @@ class Baseline:
     def get_query_list(self, min_precision=0, min_recall=0):
         query_list = list()
         for query in self.query_list:
-            if query.base_precision > min_precision and query.base_recall > min_recall:
+            if query.base_precision >= min_precision and query.base_recall >= min_recall:
                 query_list.append(query)
 
         return query_list
