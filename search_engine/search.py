@@ -1,3 +1,6 @@
+import os
+import pickle
+
 from search_engine.rank_bm25 import BM25Okapi
 
 from nltk.tokenize import word_tokenize
@@ -27,3 +30,17 @@ class SearchEngine:
         indices = (-bm25_scores).argsort()
         top_documents = [self.corpus[i] for i in indices[:top_k]]
         return top_documents
+
+
+def save_search_engine(search_engine, path):
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+    with open(path + '/search_engine.pickle', 'wb') as handle:
+        pickle.dump(search_engine, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+
+def load_search_engine(path):
+    with open(path + '/search_engine.pickle', 'rb') as handle:
+        search_engine = pickle.load(handle)
+    return search_engine

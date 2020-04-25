@@ -1,32 +1,24 @@
 import os
 import pickle
-
-import numpy as np
 import pandas as pd
+
+from keras_preprocessing.sequence import pad_sequences
 from keras_preprocessing.text import Tokenizer
 
 from model.embedding import WordEmbedding
 
 
-def convert_to_data_frame(baseline):
-    query_obj_list = baseline.get_query_list(min_precision=0.2, min_recall=0.01)
+def extract_query_keyword_list(query_map):
+    qid_list = list()
     query_list = list()
     keyword_list = list()
-    keyword_line_list = list()
-    article_list = list()
-    base_precisions = np.zeros(shape=(len(query_obj_list),))
-    for i, query in enumerate(query_obj_list):
-        base_precisions[i] = query.base_precision
+    for qid, query in query_map.items():
+        qid_list.append(qid)
         query_list.append(query.query)
-        article_list.append(query.article)
-        keyword_list.append(query.keywords)
         keywords = ' '.join([keyword for _, keyword in query.keywords])
-        keyword_line_list.append(keywords)
+        keyword_list.append(keywords)
 
-    data_frame = pd.DataFrame({'query': query_list, 'keyword': keyword_list, 'keyword_line': keyword_line_list,
-                               'base_precision': base_precisions, 'article': article_list})
-
-    return data_frame
+    return qid_list, query_list, keyword_list
 
 
 class Preprocessor:
@@ -36,17 +28,27 @@ class Preprocessor:
         self.word_embedding = None
         if emb_path:
             self.word_embedding = WordEmbedding(embfile=emb_path)
+
+        self.query_map = None
         self.query_df = None
 
-    def initialize(self, baseline):
-        self.query_df = convert_to_data_frame(baseline)
+    def initialize(self, query_manager):
+        self.query_map = query_manager.query_list
 
-        self.tokenizer.fit_on_texts(baseline.corpus)
-        self.tokenizer.fit_on_texts(self.query_df['query'])
+        qid, query, keyword = extract_query_keyword_list(self.query_map)
+        self.tokenizer.fit_on_texts(query_manager.corpus)
+        self.tokenizer.fit_on_texts(query)
         self.word_embedding.create_embedding_matrix(self.tokenizer)
 
-        self.query_df['query_sequence'] = self.tokenizer.texts_to_sequences(self.query_df['query'])
-        self.query_df['keyword_sequence'] = self.tokenizer.texts_to_sequences(self.query_df['keyword_line'])
+        self.query_df = pd.DataFrame({'qid': qid,
+                                      'query_sequence': self.tokenizer.texts_to_sequences(query),
+                                      'keyword_sequence': self.tokenizer.texts_to_sequences(keyword)})
+
+    def get_inputs(self, sequence_length=50):
+        qid = self.query_df['qid'].to_numpy()
+        query_sequence = pad_sequences(self.query_df['query_sequence'], maxlen=sequence_length)
+        keyword_sequence = pad_sequences(self.query_df['keyword_sequence'], maxlen=sequence_length)
+        return qid, query_sequence, keyword_sequence
 
     def save_data(self, path):
         # Create directory if not exist
@@ -65,6 +67,10 @@ class Preprocessor:
         with open(path + '/query_df.pickle', 'wb') as handle:
             pickle.dump(self.query_df, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
+        # Serialize query map
+        with open(path + '/query_map.pickle', 'wb') as handle:
+            pickle.dump(self.query_map, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
     def load_data(self, path):
         # Load word embedding
         with open(path + '/embedding.pickle', 'rb') as handle:
@@ -78,6 +84,9 @@ class Preprocessor:
         with open(path + '/query_df.pickle', 'rb') as handle:
             self.query_df = pickle.load(handle)
 
+        # Load query map
+        with open(path + '/query_map.pickle', 'rb') as handle:
+            self.query_map = pickle.load(handle)
 
 
 

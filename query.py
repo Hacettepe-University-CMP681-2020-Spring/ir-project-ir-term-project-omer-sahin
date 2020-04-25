@@ -33,7 +33,7 @@ class Query:
         return precision, recall
 
 
-class Baseline:
+class QueryManager:
 
     def __init__(self, qta_indexer, min_paragraph_number=20, top_document_number=10, keyword_number=20):
         self.qta_indexer = qta_indexer
@@ -43,7 +43,6 @@ class Baseline:
         self.query_list = self.qta_indexer.get_query_list(min_paragraph=min_paragraph_number)
         self.corpus = self.qta_indexer.get_paragraph_list(min_paragraph=min_paragraph_number)
         self.search_engine = SearchEngine(corpus=self.corpus)
-
         self.query_number = len(self.query_list)
 
     def search_queries(self):
@@ -63,13 +62,15 @@ class Baseline:
               (index+1, self.query_number, precision, recall, query.query))
         return query
 
-    def get_query_list(self, min_precision=0, min_recall=0):
-        query_list = list()
+    def clear_query_list(self, min_precision=0, min_recall=0):
+        if not isinstance(self.query_list, list):
+            return
+        query_map = dict()
         for query in self.query_list:
             if query.base_precision >= min_precision and query.base_recall >= min_recall:
-                query_list.append(query)
-
-        return query_list
+                qid = hash(query.query)
+                query_map[qid] = query
+        self.query_list = query_map
 
     def save_queries(self, path):
         if not os.path.exists(path):
