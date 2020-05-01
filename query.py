@@ -53,7 +53,7 @@ class QueryManager:
 
     def search_base_query(self, query_tuple):
         index, query = query_tuple
-        top_documents = self.search_engine.get_top_documents(query=query, top_k=self.top_document_number)
+        top_documents = self.search_engine.get_top_documents(query=query.query, top_k=self.top_document_number)
         query.extract_keywords(retrieved_documents=top_documents,
                                tfidf_vectorizer=self.qta_indexer.tfidf_vectorizer,
                                keyword_number=self.keyword_number)
