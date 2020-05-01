@@ -1,7 +1,7 @@
 import os
 import pickle
 import numpy as np
-
+from nltk.corpus import stopwords
 from keras_preprocessing.sequence import pad_sequences
 from keras_preprocessing.text import Tokenizer, text_to_word_sequence
 
@@ -27,20 +27,23 @@ class Preprocessor:
         self.tokenizer.fit_on_texts(query_manager.corpus)
         self.word_embedding.create_embedding_matrix(self.tokenizer)
 
-    def get_query_and_candidate_terms(self, sequence_length=32):
+    def get_query_and_candidate_terms(self, sequence_length=20):
 
-        qid_list = list()
+        stop_words = set(stopwords.words('english'))
+
+        query_list = list()
         query_texts = list()
         candidate_terms = list()
         query_terms_texts = list()
         keyword_terms_texts = list()
 
-        for qid, query in self.query_map.items():
-            qid_list.append(qid)
+        for query in self.query_map.values():
+            query_list.append(query)
             query_texts.append(query.query)
 
             terms = [''] * (sequence_length*2)
-            terms[:sequence_length] = text_to_word_sequence(query.query)[:sequence_length]
+            query_terms = text_to_word_sequence(query.query)
+            terms[:sequence_length] = [term for term in query_terms if term not in stop_words][:sequence_length]
             terms[sequence_length:] = [keyword for _, keyword in query.keywords][:sequence_length]
             candidate_terms.append(terms)
 
@@ -57,7 +60,7 @@ class Preprocessor:
 
         terms_sequence = np.hstack([query_terms_sequence, keyword_terms_sequence])
 
-        return qid_list, query_sequence, terms_sequence, candidate_terms
+        return query_list, query_sequence, terms_sequence, candidate_terms
 
     def save_data(self, path):
         # Create directory if not exist
@@ -88,7 +91,3 @@ class Preprocessor:
         # Load query map
         with open(path + '/query_map.pickle', 'rb') as handle:
             self.query_map = pickle.load(handle)
-
-
-
-
