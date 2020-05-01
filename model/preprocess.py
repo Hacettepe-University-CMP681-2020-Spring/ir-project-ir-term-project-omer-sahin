@@ -1,5 +1,6 @@
 import os
 import pickle
+import numpy as np
 
 from keras_preprocessing.sequence import pad_sequences
 from keras_preprocessing.text import Tokenizer, text_to_word_sequence
@@ -9,16 +10,16 @@ from model.embedding import WordEmbedding
 
 class Preprocessor:
 
-    def __init__(self, emb_path=None):
-        self.tokenizer = Tokenizer()
+    def __init__(self):
+        self.tokenizer = None
         self.word_embedding = None
-        if emb_path:
-            self.word_embedding = WordEmbedding(embfile=emb_path)
-
         self.query_map = None
         self.query_df = None
 
-    def initialize(self, query_manager):
+    def initialize(self, query_manager, emb_path):
+        self.tokenizer = Tokenizer()
+        self.word_embedding = WordEmbedding(embfile=emb_path)
+
         self.query_map = query_manager.query_list
 
         query_list = [query.query for query in self.query_map.values()]
@@ -31,21 +32,30 @@ class Preprocessor:
         qid_list = list()
         query_texts = list()
         candidate_terms = list()
+        query_terms_texts = list()
+        keyword_terms_texts = list()
 
         for qid, query in self.query_map.items():
             qid_list.append(qid)
             query_texts.append(query.query)
 
-            terms = '' * (sequence_length*2)
+            terms = [''] * (sequence_length*2)
             terms[:sequence_length] = text_to_word_sequence(query.query)[:sequence_length]
-            terms[sequence_length:] = query.keywords[:sequence_length]
+            terms[sequence_length:] = [keyword for _, keyword in query.keywords][:sequence_length]
             candidate_terms.append(terms)
 
-        query_sequence = self.tokenizer.texts_to_sequences(query_texts)
-        terms_sequence = self.tokenizer.texts_to_sequences(candidate_terms)
+            query_terms_texts.append(' '.join(terms[:sequence_length]))
+            keyword_terms_texts.append(' '.join(terms[sequence_length:]))
 
+        query_sequence = self.tokenizer.texts_to_sequences(query_texts)
         query_sequence = pad_sequences(query_sequence, maxlen=sequence_length)
-        terms_sequence = pad_sequences(terms_sequence, maxlen=sequence_length*2)
+
+        query_terms_sequence = self.tokenizer.texts_to_sequences(query_terms_texts)
+        query_terms_sequence = pad_sequences(query_terms_sequence, maxlen=sequence_length, padding='post')
+        keyword_terms_sequence = self.tokenizer.texts_to_sequences(keyword_terms_texts)
+        keyword_terms_sequence = pad_sequences(keyword_terms_sequence, maxlen=sequence_length)
+
+        terms_sequence = np.hstack([query_terms_sequence, keyword_terms_sequence])
 
         return qid_list, query_sequence, terms_sequence, candidate_terms
 

@@ -53,10 +53,9 @@ if __name__ == '__main__':
 
     # Preprocess #######################################################################################################
 
-    # preprocessor = Preprocessor(emb_path=embedding_file_path)
-    # preprocessor.initialize(query_manager=query_manager)
-    # preprocessor.save_data(path=output_path)
     preprocessor = Preprocessor()
+    # preprocessor.initialize(query_manager=query_manager, emb_path=embedding_file_path)
+    # preprocessor.save_data(path=output_path)
     preprocessor.load_data(path=output_path)
     print('--')
 
