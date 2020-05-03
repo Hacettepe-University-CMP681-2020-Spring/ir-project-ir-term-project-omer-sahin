@@ -13,16 +13,16 @@ class Preprocessor:
     def __init__(self):
         self.tokenizer = None
         self.word_embedding = None
-        self.query_map = None
+        self.query_list = None
         self.query_df = None
 
     def initialize(self, query_manager, emb_path):
         self.tokenizer = Tokenizer()
         self.word_embedding = WordEmbedding(embfile=emb_path)
 
-        self.query_map = query_manager.query_list
+        self.query_list = query_manager.query_list
 
-        query_list = [query.query for query in self.query_map.values()]
+        query_list = [query.query for query in self.query_list]
         self.tokenizer.fit_on_texts(query_list)
         self.tokenizer.fit_on_texts(query_manager.corpus)
         self.word_embedding.create_embedding_matrix(self.tokenizer)
@@ -37,7 +37,7 @@ class Preprocessor:
         query_terms_texts = list()
         keyword_terms_texts = list()
 
-        for query in self.query_map.values():
+        for query in self.query_list:
             query_list.append(query)
             query_texts.append(query.query)
 
@@ -76,8 +76,8 @@ class Preprocessor:
             pickle.dump(self.tokenizer, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
         # Serialize query map
-        with open(path + '/query_map.pickle', 'wb') as handle:
-            pickle.dump(self.query_map, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        with open(path + '/query_list.pickle', 'wb') as handle:
+            pickle.dump(self.query_list, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     def load_data(self, path):
         # Load word embedding
@@ -89,5 +89,5 @@ class Preprocessor:
             self.tokenizer = pickle.load(handle)
 
         # Load query map
-        with open(path + '/query_map.pickle', 'rb') as handle:
-            self.query_map = pickle.load(handle)
+        with open(path + '/query_list.pickle', 'rb') as handle:
+            self.query_list = pickle.load(handle)

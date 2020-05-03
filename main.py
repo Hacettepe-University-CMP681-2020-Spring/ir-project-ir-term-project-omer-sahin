@@ -38,10 +38,10 @@ if __name__ == '__main__':
     query_manager.load_queries(path=output_path)
 
     query_manager.clear_query_list(min_precision=0.2, min_recall=0.01)
-    query_list = query_manager.query_list.items()
+    query_list = query_manager.query_list
     precisions = np.zeros(shape=(len(query_list),))
     recalls = np.zeros(shape=(len(query_list),))
-    for i, (qid, query) in enumerate(query_list):
+    for i, query in enumerate(query_list):
         print('P:%.5f, R:%.5f  < %s >' % (query.base_precision, query.base_recall, query.query))
         print('\tKeywords:', query.keywords)
         precisions[i] = query.base_precision

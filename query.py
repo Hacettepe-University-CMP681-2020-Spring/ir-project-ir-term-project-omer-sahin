@@ -63,14 +63,11 @@ class QueryManager:
         return query
 
     def clear_query_list(self, min_precision=0, min_recall=0):
-        if not isinstance(self.query_list, list):
-            return
-        query_map = dict()
+        cleared_list = list()
         for query in self.query_list:
             if query.base_precision >= min_precision and query.base_recall >= min_recall:
-                qid = hash(query.query)
-                query_map[qid] = query
-        self.query_list = query_map
+                cleared_list.append(query)
+        self.query_list = cleared_list
 
     def save_queries(self, path):
         if not os.path.exists(path):

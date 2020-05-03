@@ -12,18 +12,18 @@ def search_and_evaluate(inputs):
     top_docs = search_engine.get_top_documents(query=ref_query)
     precision, recall = query.calc_precision_recall(retrieved_documents=top_docs)
 
-    sample_weight = (precision - query.base_precision) / query.base_precision
+    reward = max((precision - query.base_precision) / query.base_precision, 0.0)
 
-    print('    Base -> [P:%.5f, R:%.5f]  Reformulated -> [P:%.5f, R:%.5f]  Weight:%10.6f | %s -> %s'
-          % (query.base_precision, query.base_recall, precision, recall, sample_weight, query.query, ref_query))
+    print('    Base -> [P:%.5f, R:%.5f]  Reformulated -> [P:%.5f, R:%.5f]  Reward:%10.5f | %s -> %s'
+          % (query.base_precision, query.base_recall, precision, recall, reward, query.query, ref_query))
 
-    return sample_weight
+    return reward
 
 
 def recreate_query(terms, weights, threshold=0.5):
     try:
         index = np.argwhere(weights > threshold)[:, 0]
-        query = ' '.join([terms[i] for i in index])
+        query = ' '.join([terms[i] for i in index if terms[i] is not ''])
         return query.strip()
     except IndexError:
         return ''
