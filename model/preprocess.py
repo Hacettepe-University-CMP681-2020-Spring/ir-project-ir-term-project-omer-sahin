@@ -51,7 +51,7 @@ class Preprocessor:
             keyword_terms_texts.append(' '.join(terms[sequence_length:]))
 
         query_sequence = self.tokenizer.texts_to_sequences(query_texts)
-        query_sequence = pad_sequences(query_sequence, maxlen=sequence_length)
+        query_sequence = pad_sequences(query_sequence, maxlen=sequence_length*2)
 
         query_terms_sequence = self.tokenizer.texts_to_sequences(query_terms_texts)
         query_terms_sequence = pad_sequences(query_terms_sequence, maxlen=sequence_length, padding='post')
