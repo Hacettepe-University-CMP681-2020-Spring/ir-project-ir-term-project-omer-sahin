@@ -11,7 +11,7 @@ from tensorflow_core.python.keras.layers import Embedding, BatchNormalization, C
 from tensorflow_core.python.keras import losses
 from tensorflow_core.python.keras.models import load_model
 
-from model.util import get_batch_data, evaluate_reward_precision, evaluate_precision_recall
+from model.util import get_batch_data, evaluate_reward_precision, evaluate_precision_recall, recreate_query
 
 
 class QueryReformulation:
@@ -82,9 +82,10 @@ class QueryReformulation:
 
             # Save model
             avg_precision = precision.mean()
+            print('  Average precision %.5f on epoch %d, best precision %.5f' % (avg_precision, e+1, best_precision))
             if avg_precision > best_precision:
                 best_precision = avg_precision
-                model_path = '../../saved_model/reformulation_model' + str(datetime.now().date())
+                model_path = '../../saved_model/reformulation_model_' + str(datetime.now().date())
                 if not os.path.exists(model_path):
                     os.makedirs(model_path)
                 self.model.save(filepath=model_path)
@@ -112,3 +113,8 @@ class QueryReformulation:
         pool.join()
 
         return precision_recall.mean(axis=0)
+
+    def reformulate_query(self, query_sequence, terms_sequence, candidate_terms, threshold=0.5):
+        weights = self.model.predict(x=[query_sequence, terms_sequence])
+        reformulated_query = recreate_query(terms=candidate_terms, weights=weights, threshold=threshold)
+        return reformulated_query

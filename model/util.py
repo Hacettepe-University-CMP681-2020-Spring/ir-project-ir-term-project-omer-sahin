@@ -1,7 +1,5 @@
 import numpy as np
-from search_engine.search import load_search_engine
-
-search_engine = load_search_engine(path='../../query_reformulation_dataset')
+from search_engine.search import search_engine_instance as search_engine
 
 
 def get_batch_data(query_objs, query_sequence, terms_sequence, candidate_terms, batch_size=4):

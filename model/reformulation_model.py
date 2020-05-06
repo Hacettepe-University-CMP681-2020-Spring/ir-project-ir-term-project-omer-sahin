@@ -41,8 +41,8 @@ if __name__ == '__main__':
     base_precision = 0
     base_recall = 0
     for query in tst_query_objs:
-        base_precision = query.base_precision
-        base_recall = query.base_recall
+        base_precision += query.base_precision
+        base_recall += query.base_recall
 
     print('Base query precision/recall:')
     print('  Avg. Precision : ', base_precision/len(tst_query_objs))

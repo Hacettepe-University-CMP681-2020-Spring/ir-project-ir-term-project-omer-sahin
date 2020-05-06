@@ -31,14 +31,12 @@ class Preprocessor:
 
         stop_words = set(stopwords.words('english'))
 
-        query_list = list()
         query_texts = list()
         candidate_terms = list()
         query_terms_texts = list()
         keyword_terms_texts = list()
 
         for query in self.query_list:
-            query_list.append(query)
             query_texts.append(query.query)
 
             terms = [''] * (sequence_length*2)
@@ -60,7 +58,7 @@ class Preprocessor:
 
         terms_sequence = np.hstack([query_terms_sequence, keyword_terms_sequence])
 
-        return query_list, query_sequence, terms_sequence, candidate_terms
+        return self.query_list, query_sequence, terms_sequence, candidate_terms
 
     def save_data(self, path):
         # Create directory if not exist

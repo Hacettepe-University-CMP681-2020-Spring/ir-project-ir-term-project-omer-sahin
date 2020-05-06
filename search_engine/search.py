@@ -41,6 +41,13 @@ def save_search_engine(search_engine, path):
 
 
 def load_search_engine(path):
-    with open(path + '/search_engine.pickle', 'rb') as handle:
-        search_engine = pickle.load(handle)
+    try:
+        with open(path + '/search_engine.pickle', 'rb') as handle:
+            search_engine = pickle.load(handle)
+    except FileNotFoundError:
+        search_engine = None
     return search_engine
+
+
+# Search engine instance
+search_engine_instance = load_search_engine('../../query_reformulation_dataset')
