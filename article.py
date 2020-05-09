@@ -104,7 +104,7 @@ class QTAIndexer:
 
                 self.article_list[title].add_paragraph(paragraph=self.paragraph_map[paragraph_id])
 
-            except Exception:
+            except KeyError:
                 continue
 
         print('Number of title in Jeopardy   :', len(self.title_query_map))

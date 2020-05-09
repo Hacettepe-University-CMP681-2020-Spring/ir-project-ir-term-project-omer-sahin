@@ -48,5 +48,3 @@ def evaluate_precision_recall(inputs):
           % (query.base_precision, query.base_recall, precision, recall, query.query, ref_query))
 
     return precision, recall
-
-
