@@ -89,7 +89,7 @@ class Evaluate:
 
 
 if __name__ == '__main__':
-    # q_reform = QueryReformulation(model_path='../../saved_model/reformulation_model_2020-05-06')
+    q_reform = QueryReformulation(model_path='../../saved_model/qr_model_2020-05-09.h5')
 
     preprocessor = Preprocessor()
     preprocessor.load_data(path='../../query_reformulation_dataset')
@@ -108,12 +108,6 @@ if __name__ == '__main__':
                                                                                                candidate_terms,
                                                                                                test_size=0.3,
                                                                                                random_state=42)
-
-    q_reform = QueryReformulation()
-    q_reform.build_cnn_model(query_dim=query_sequence.shape[1],
-                             terms_dim=terms_sequence.shape[1],
-                             output_dim=terms_sequence.shape[1],
-                             word_embedding=preprocessor.word_embedding)
 
     evaluate = Evaluate(search_engine=search_engine, reformulation_model=q_reform,
                         query_list=zip(query_objs, query_sequence, terms_sequence, candidate_terms),

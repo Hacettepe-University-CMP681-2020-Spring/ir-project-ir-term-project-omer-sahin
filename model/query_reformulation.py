@@ -46,7 +46,7 @@ class QueryReformulation:
         merged_flat = Flatten()(merged_cnn)
 
         dense = BatchNormalization()(merged_flat)
-        dense = Dense(256, activation='sigmoid')(dense)
+        dense = Dense(128, activation='sigmoid')(dense)
         # dense = Dropout(0.4)(dense)
         out = Dense(output_dim, activation='linear')(dense)
 
@@ -85,10 +85,7 @@ class QueryReformulation:
             print('  Average precision %.5f on epoch %d, best precision %.5f' % (avg_precision, e+1, best_precision))
             if avg_precision > best_precision:
                 best_precision = avg_precision
-                model_path = '../../saved_model/query_reformulate_model_' + str(datetime.now().date())
-                if not os.path.exists(model_path):
-                    os.makedirs(model_path)
-                self.model.save(filepath=model_path)
+                self.model.save(filepath='../../saved_model/qr_model_' + str(datetime.now().date()) + '.h5')
 
         pool.close()
         pool.join()

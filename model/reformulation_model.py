@@ -11,11 +11,11 @@ if __name__ == '__main__':
         preprocessor.get_query_and_candidate_terms(sequence_length=20)
 
     # sublist for testing
-    # size = 100
-    # query_objs = query_objs[:size]
-    # query_sequence = query_sequence[:size]
-    # terms_sequence = terms_sequence[:size]
-    # candidate_terms = candidate_terms[:size]
+    size = 10
+    query_objs = query_objs[:size]
+    query_sequence = query_sequence[:size]
+    terms_sequence = terms_sequence[:size]
+    candidate_terms = candidate_terms[:size]
 
     trn_query_objs, tst_query_objs, \
     trn_query_sequence, tst_query_sequence, \
