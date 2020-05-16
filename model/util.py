@@ -2,6 +2,11 @@ import numpy as np
 from search_engine.search import search_engine_instance as search_engine
 
 
+def unchanged_shape(input_shape):
+    """Function for Lambda layer"""
+    return input_shape
+
+
 def get_batch_data(query_objs, query_sequence, terms_sequence, candidate_terms, batch_size=4):
     for i in range(0, len(query_objs), batch_size):
         query = query_objs[i:i + batch_size]

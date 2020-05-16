@@ -11,7 +11,7 @@ if __name__ == '__main__':
         preprocessor.get_query_and_candidate_terms(sequence_length=20)
 
     # sublist for testing
-    size = 10
+    size = 12
     query_objs = query_objs[:size]
     query_sequence = query_sequence[:size]
     terms_sequence = terms_sequence[:size]
@@ -24,10 +24,11 @@ if __name__ == '__main__':
                                                                 terms_sequence, candidate_terms,
                                                                 test_size=0.3, random_state=42)
     q_reform = QueryReformulation()
-    q_reform.build_cnn_model(query_dim=query_sequence.shape[1],
-                             terms_dim=terms_sequence.shape[1],
-                             output_dim=terms_sequence.shape[1],
-                             word_embedding=preprocessor.word_embedding)
+    q_reform.build_model(model_name='bilstm',  # 'cnn', 'lstm', 'bilstm'
+                         query_dim=query_sequence.shape[1],
+                         terms_dim=terms_sequence.shape[1],
+                         output_dim=terms_sequence.shape[1],
+                         word_embedding=preprocessor.word_embedding)
 
     q_reform.train_model(query_objs=trn_query_objs,
                          query_sequence=trn_query_sequence, terms_sequence=trn_terms_sequence,
@@ -45,8 +46,8 @@ if __name__ == '__main__':
         base_recall += query.base_recall
 
     print('Base query precision/recall:')
-    print('  Avg. Precision : ', base_precision/len(tst_query_objs))
-    print('  Avg. Recall    : ', base_recall/len(tst_query_objs))
+    print('  Avg. Precision : ', base_precision / len(tst_query_objs))
+    print('  Avg. Recall    : ', base_recall / len(tst_query_objs))
 
     print('Reformulated query precision/recall:')
     print('  Avg. Precision : ', avg_precision)

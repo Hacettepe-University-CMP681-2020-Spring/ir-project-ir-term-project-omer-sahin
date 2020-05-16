@@ -1,17 +1,18 @@
-
 from datetime import datetime
 
 import numpy as np
 from multiprocessing import Pool
 
 from tensorflow_core.python.keras import Input, Sequential, Model
-from tensorflow_core.python.keras.layers import Embedding, BatchNormalization, Concatenate, \
-    Dense, MaxPooling1D, Flatten, Conv1D
+from tensorflow_core.python.keras.backend import softmax
+from tensorflow_core.python.keras.layers import Embedding, BatchNormalization, \
+    Dense, MaxPooling1D, Flatten, Conv1D, Dot, Lambda, LSTM, Bidirectional
 
 from tensorflow_core.python.keras import losses
 from tensorflow_core.python.keras.models import load_model
 
-from model.util import get_batch_data, evaluate_reward_precision, evaluate_precision_recall, recreate_query
+from model.util import get_batch_data, evaluate_reward_precision, evaluate_precision_recall, recreate_query, \
+    unchanged_shape
 
 
 class QueryReformulation:
@@ -22,32 +23,63 @@ class QueryReformulation:
             self.model = load_model(model_path)
             self.model.summary()
 
-    def build_cnn_model(self, query_dim, terms_dim, output_dim, word_embedding):
+    def build_model(self, model_name, query_dim, terms_dim, output_dim, word_embedding):
         query_input = Input(shape=(query_dim,), name='query_input')
         terms_input = Input(shape=(terms_dim,), name='terms_input')
 
-        embedding_cnn_block = Sequential(layers=[
-            Embedding(word_embedding.vocabulary_size, word_embedding.dimensions,
-                      weights=[word_embedding.embedding_matrix],
-                      trainable=True, mask_zero=False),
-            BatchNormalization(),
-            Conv1D(filters=64, kernel_size=3, strides=1),
-            MaxPooling1D(pool_size=3)
-        ])
+        if model_name == 'lstm':
+            embedding_feature_block = Sequential(layers=[
+                Embedding(word_embedding.vocabulary_size, word_embedding.dimensions,
+                          weights=[word_embedding.embedding_matrix],
+                          trainable=True, mask_zero=False),
+                BatchNormalization(),
+                LSTM(64, return_sequences=True)
+            ])
 
-        query_embedding_cnn = embedding_cnn_block(query_input)
-        terms_embedding_cnn = embedding_cnn_block(terms_input)
+        elif model_name == 'bilstm':
+            embedding_feature_block = Sequential(layers=[
+                Embedding(word_embedding.vocabulary_size, word_embedding.dimensions,
+                          weights=[word_embedding.embedding_matrix],
+                          trainable=True, mask_zero=False),
+                BatchNormalization(),
+                Bidirectional(LSTM(64, return_sequences=True))
+            ])
 
-        merged_cnn = Concatenate()([query_embedding_cnn, terms_embedding_cnn])
+        else:  # default cnn
+            embedding_feature_block = Sequential(layers=[
+                Embedding(word_embedding.vocabulary_size, word_embedding.dimensions,
+                          weights=[word_embedding.embedding_matrix],
+                          trainable=True, mask_zero=False),
+                BatchNormalization(),
+                Conv1D(filters=64, kernel_size=3, strides=1),
+                MaxPooling1D(pool_size=3)
+            ])
 
-        merged_cnn = Conv1D(filters=256, kernel_size=3, strides=1)(merged_cnn)
-        merged_cnn = MaxPooling1D(pool_size=3)(merged_cnn)
+        # Features
+        query_feature = embedding_feature_block(query_input)
+        terms_feature = embedding_feature_block(terms_input)
 
-        merged_flat = Flatten()(merged_cnn)
+        # Query-Terms alignment
+        attention = Dot(axes=-1)([query_feature, terms_feature])
+        softmax_attention = Lambda(lambda x: softmax(x, axis=1),
+                                   output_shape=unchanged_shape)(attention)
+        terms_aligned = Dot(axes=1)([softmax_attention, terms_feature])
 
-        dense = BatchNormalization()(merged_flat)
-        dense = Dense(128, activation='sigmoid')(dense)
-        # dense = Dropout(0.4)(dense)
+        # Aligned features
+        if model_name == 'lstm':
+            flatten_layer = LSTM(128, return_sequences=False)(terms_aligned)
+
+        elif model_name == 'bilstm':
+            flatten_layer = Bidirectional(LSTM(128, return_sequences=False))(terms_aligned)
+
+        else:  # default cnn
+            merged_cnn = Conv1D(filters=128, kernel_size=3, strides=1)(terms_aligned)
+            merged_cnn = MaxPooling1D(pool_size=3)(merged_cnn)
+            flatten_layer = Flatten()(merged_cnn)
+
+        # Output
+        dense = BatchNormalization()(flatten_layer)
+        dense = Dense(64, activation='sigmoid')(dense)
         out = Dense(output_dim, activation='linear')(dense)
 
         self.model = Model(inputs=[query_input, terms_input], outputs=out)
@@ -65,7 +97,6 @@ class QueryReformulation:
             for i, query, q_seq, t_seq, terms in get_batch_data(query_objs, query_sequence,
                                                                 terms_sequence, candidate_terms,
                                                                 batch_size):
-
                 print('  [%4d-%-4d/%d]' % (i, i + batch_size, len(query_objs)))
 
                 weights = self.model.predict(x=[q_seq, t_seq])
@@ -82,7 +113,7 @@ class QueryReformulation:
 
             # Save model
             avg_precision = precision.mean()
-            print('  Average precision %.5f on epoch %d, best precision %.5f' % (avg_precision, e+1, best_precision))
+            print('  Average precision %.5f on epoch %d, best precision %.5f' % (avg_precision, e + 1, best_precision))
             if avg_precision > best_precision:
                 best_precision = avg_precision
                 self.model.save(filepath='../../saved_model/qr_model_' + str(datetime.now().date()) + '.h5')
@@ -97,7 +128,6 @@ class QueryReformulation:
         for i, query, q_seq, t_seq, terms in get_batch_data(query_objs, query_sequence,
                                                             terms_sequence, candidate_terms,
                                                             batch_size):
-
             print('[%4d-%-4d/%d]' % (i, i + batch_size, len(query_objs)))
 
             weights = self.model.predict(x=[q_seq, t_seq])
