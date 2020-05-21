@@ -1,5 +1,4 @@
 import numpy as np
-from multiprocessing import Pool, cpu_count
 
 from sklearn.metrics import ndcg_score
 from sklearn.model_selection import train_test_split
@@ -23,19 +22,16 @@ def calc_ndcg_score(true_samples, predicted_samples, k):
 class Evaluate:
 
     def __init__(self, search_engine, reformulation_model, query_list, sample_size):
+        self.k_list = [5, 10, 20, 40]
         self.search_engine = search_engine
         self.reformulation_model = reformulation_model
         self.query_list = query_list
-        self.k_list = [5, 10, 20, 40]
+        self.sample_size = sample_size
 
         self.eval_base = np.zeros(shape=(len(self.k_list), 3, sample_size))
         self.eval_reform = np.zeros(shape=(len(self.k_list), 3, sample_size))
 
     def evaluate_queries(self):
-        # pool = Pool(4)
-        # pool.map(self.evaluate_query, enumerate(self.query_list))
-        # pool.close()
-        # pool.join()
 
         for query_tuple in enumerate(self.query_list):
             self.evaluate_query(query_tuple)
@@ -61,6 +57,7 @@ class Evaluate:
 
         reformulated_documents = self.search_engine.get_top_documents(query=reformulated_query, top_k=max_top_k)
 
+        print('[%4d/%d] %s -> %s' % (instance + 1, self.sample_size, query.query, reformulated_query))
         for i, k in enumerate(self.k_list):
             base_precision, base_recall = query.calc_precision_recall(retrieved_documents=base_documents[:k])
             ref_precision, ref_recall = query.calc_precision_recall(retrieved_documents=reformulated_documents[:k])
@@ -70,14 +67,12 @@ class Evaluate:
             ref_ndcg = calc_ndcg_score(true_samples=query.article.paragraph_list,
                                        predicted_samples=reformulated_documents, k=k)
 
-            print('  Evaluate @%d  : %s -> %s \n'
+            print('  Evaluate @%d  : \n'
                   '    Precision   : [%.6f -> %.6f]\n'
                   '    Recall      : [%.6f -> %.6f]\n'
                   '    NDCG        : [%.6f -> %.6f]'
-                  % (k, query.query, reformulated_query,
-                     base_precision, ref_precision,
-                     base_recall, ref_recall,
-                     base_ndcg, ref_ndcg))
+                  % (k, base_precision, ref_precision,
+                     base_recall, ref_recall, base_ndcg, ref_ndcg))
 
             self.eval_base[i, 0, instance] = base_precision
             self.eval_base[i, 1, instance] = base_recall
@@ -89,14 +84,14 @@ class Evaluate:
 
 
 if __name__ == '__main__':
-    q_reform = QueryReformulation(model_path='../../saved_model/qr_model_2020-05-09.h5')
+    q_reform = QueryReformulation(model_path='../../saved_model/qr_cnn_model_e6_p0.1927_2020-05-21.h5')
 
     preprocessor = Preprocessor()
     preprocessor.load_data(path='../../query_reformulation_dataset')
     query_objs, query_sequence, terms_sequence, candidate_terms = \
         preprocessor.get_query_and_candidate_terms(sequence_length=20)
 
-    size = 10
+    size = 100
     query_objs = query_objs[:size]
     query_sequence = query_sequence[:size]
     terms_sequence = terms_sequence[:size]

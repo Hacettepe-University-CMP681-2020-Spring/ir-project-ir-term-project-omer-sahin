@@ -23,8 +23,8 @@ if __name__ == '__main__':
     trn_candidate_terms, tst_candidate_terms = train_test_split(query_objs, query_sequence,
                                                                 terms_sequence, candidate_terms,
                                                                 test_size=0.3, random_state=42)
-    q_reform = QueryReformulation()
-    q_reform.build_model(model_name='bilstm',  # 'cnn', 'lstm', 'bilstm'
+    q_reform = QueryReformulation(output_path='../../saved_model')
+    q_reform.build_model(model_name='cnn',  # 'cnn', 'lstm', 'bilstm'
                          query_dim=query_sequence.shape[1],
                          terms_dim=terms_sequence.shape[1],
                          output_dim=terms_sequence.shape[1],

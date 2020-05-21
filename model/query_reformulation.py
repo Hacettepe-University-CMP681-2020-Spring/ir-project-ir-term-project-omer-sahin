@@ -17,13 +17,19 @@ from model.util import get_batch_data, evaluate_reward_precision, evaluate_preci
 
 class QueryReformulation:
 
-    def __init__(self, model_path=None):
+    def __init__(self, model_path=None, output_path=None):
         self.model = None
+        self.model_name = None
+        self.model_output = output_path + '/qr_{name}_model_[e{epoch}]_[p{precision}]_' \
+                            + str(datetime.now().date()) + '.h5'
         if model_path:
             self.model = load_model(model_path)
             self.model.summary()
 
     def build_model(self, model_name, query_dim, terms_dim, output_dim, word_embedding):
+
+        self.model_name = model_name
+
         query_input = Input(shape=(query_dim,), name='query_input')
         terms_input = Input(shape=(terms_dim,), name='terms_input')
 
@@ -116,7 +122,8 @@ class QueryReformulation:
             print('  Average precision %.5f on epoch %d, best precision %.5f' % (avg_precision, e + 1, best_precision))
             if avg_precision > best_precision:
                 best_precision = avg_precision
-                self.model.save(filepath='../../saved_model/qr_model_' + str(datetime.now().date()) + '.h5')
+                self.model.save(filepath=self.model_output.format(name=self.model_name,
+                                                                  epoch=e + 1, precision=round(avg_precision, 4)))
 
         pool.close()
         pool.join()
