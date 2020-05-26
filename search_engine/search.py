@@ -8,10 +8,12 @@ from nltk.tokenize import word_tokenize
 
 def tokenize(corpus):
     if type(corpus) is not list:
+        corpus = corpus.lower()
         return word_tokenize(corpus)
 
     tokenized_corpus = list()
     for text in corpus:
+        text = text.lower()
         tokens = word_tokenize(text)
         tokenized_corpus.append(tokens)
 

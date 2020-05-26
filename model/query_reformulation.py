@@ -17,7 +17,7 @@ from model.util import get_batch_data, evaluate_reward_precision, evaluate_preci
 
 class QueryReformulation:
 
-    def __init__(self, model_path=None, output_path=None):
+    def __init__(self, model_path=None, output_path=''):
         self.model = None
         self.model_name = None
         self.model_output = output_path + '/qr_{name}_model_[e{epoch}]_[p{precision}]_' \
