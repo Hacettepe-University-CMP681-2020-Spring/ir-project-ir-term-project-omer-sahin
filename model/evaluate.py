@@ -84,18 +84,12 @@ class Evaluate:
 
 
 if __name__ == '__main__':
-    q_reform = QueryReformulation(model_path='../../saved_model/qr_cnn_model_e6_p0.1927_2020-05-21.h5')
+    q_reform = QueryReformulation(model_path='../../saved_model/qr_lstm_model_[e1]_[p0.3279]_2020-05-26.h5')
 
     preprocessor = Preprocessor()
     preprocessor.load_data(path='../../query_reformulation_dataset')
     query_objs, query_sequence, terms_sequence, candidate_terms = \
         preprocessor.get_query_and_candidate_terms(sequence_length=20)
-
-    size = 100
-    query_objs = query_objs[:size]
-    query_sequence = query_sequence[:size]
-    terms_sequence = terms_sequence[:size]
-    candidate_terms = candidate_terms[:size]
 
     _, query_objs, _, query_sequence, _, terms_sequence, _, candidate_terms = train_test_split(query_objs,
                                                                                                query_sequence,

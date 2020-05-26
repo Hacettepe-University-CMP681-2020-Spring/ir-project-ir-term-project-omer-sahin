@@ -14,7 +14,6 @@ class Preprocessor:
         self.tokenizer = None
         self.word_embedding = None
         self.query_list = None
-        self.query_df = None
 
     def initialize(self, query_manager, emb_path):
         self.tokenizer = Tokenizer()

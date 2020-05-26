@@ -4,6 +4,8 @@ from model.preprocess import Preprocessor
 from query import QueryManager
 from search_engine.search import save_search_engine
 
+initial_run = False
+
 if __name__ == '__main__':
     # Paths
     query_path = '../query_reformulation_dataset/JEOPARDY_CSV.csv'
@@ -16,9 +18,11 @@ if __name__ == '__main__':
     # Query-Title-Article Indexer ######################################################################################
 
     qta_indexer = QTAIndexer()
-    # qta_indexer.index_documents(query_path=query_path, qrel_path=qrel_path, paragraph_path=paragraph_path)
-    # qta_indexer.save_articles(path=output_path)
-    qta_indexer.load_articles(path=output_path)
+    if initial_run:
+        qta_indexer.index_documents(query_path=query_path, qrel_path=qrel_path, paragraph_path=paragraph_path)
+        qta_indexer.save_articles(path=output_path)
+    else:
+        qta_indexer.load_articles(path=output_path)
     qta_indexer.inverse_article_frequency()
 
     for title, article in qta_indexer.article_list.items():
@@ -33,9 +37,11 @@ if __name__ == '__main__':
                                  top_document_number=10, keyword_number=50)
     save_search_engine(search_engine=query_manager.search_engine, path=output_path)
     print('Corpus size :', len(query_manager.corpus))
-    # query_manager.search_queries()
-    # query_manager.save_queries(path=output_path)
-    query_manager.load_queries(path=output_path)
+    if initial_run:
+        query_manager.search_queries()
+        query_manager.save_queries(path=output_path)
+    else:
+        query_manager.load_queries(path=output_path)
 
     query_manager.clear_query_list(min_precision=0.2, min_recall=0.01)
     query_list = query_manager.query_list
@@ -54,6 +60,8 @@ if __name__ == '__main__':
     # Preprocess #######################################################################################################
 
     preprocessor = Preprocessor()
-    # preprocessor.initialize(query_manager=query_manager, emb_path=embedding_file_path)
-    # preprocessor.save_data(path=output_path)
-    preprocessor.load_data(path=output_path)
+    if initial_run:
+        preprocessor.initialize(query_manager=query_manager, emb_path=embedding_file_path)
+        preprocessor.save_data(path=output_path)
+    else:
+        preprocessor.load_data(path=output_path)

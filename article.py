@@ -38,7 +38,7 @@ class QTAIndexer:
         self.article_title_map = dict()
         self.paragraph_map = dict()
         self.article_list = dict()
-        self.tfidf_vectorizer = TfidfVectorizer(stop_words='english')
+        self.tfidf_vectorizer = TfidfVectorizer(lowercase=True, stop_words='english')
 
     def create_title_query_map(self, query_path):
         query_df = pd.read_csv(query_path)

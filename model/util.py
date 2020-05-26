@@ -33,6 +33,7 @@ def evaluate_reward_precision(inputs):
     top_docs = search_engine.get_top_documents(query=ref_query)
     precision, recall = query.calc_precision_recall(retrieved_documents=top_docs)
 
+    # reward = (precision - query.base_precision) / query.base_precision
     reward = precision + max((precision - query.base_precision) / query.base_precision, 0.0) * 10
 
     print('    Base -> [P:%.5f, R:%.5f]  Reformulated -> [P:%.5f, R:%.5f]  Reward:%10.5f | %s -> %s'
