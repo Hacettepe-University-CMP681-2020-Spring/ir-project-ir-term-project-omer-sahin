@@ -3,6 +3,8 @@ from sklearn.model_selection import train_test_split
 from model.preprocess import Preprocessor
 from model.query_reformulation import QueryReformulation
 
+retrain = False  # retrain model from where it left off
+
 if __name__ == '__main__':
     preprocessor = Preprocessor()
     preprocessor.load_data(path='../../query_reformulation_dataset')
@@ -17,20 +19,23 @@ if __name__ == '__main__':
                                                                 terms_sequence, candidate_terms,
                                                                 test_size=0.3, random_state=42)
 
-    q_reform = QueryReformulation(output_path='../../saved_model')
-    q_reform.build_model(model_name='cnn',  # 'cnn', 'lstm', 'bilstm'
-                         query_dim=query_sequence.shape[1],
-                         terms_dim=terms_sequence.shape[1],
-                         output_dim=terms_sequence.shape[1],
-                         word_embedding=preprocessor.word_embedding)
+    if retrain:
+        q_reform = QueryReformulation(
+            model_path='../../saved_model/qr_cnn_model_[p0.4028]_2020-05-27.h5',
+            output_path='../../saved_model')
+        q_reform.model_name = 'cnn_retrained'
 
-    # q_reform = QueryReformulation(
-    #     model_path='../../saved_model/qr_lstm_base_[e5]_[p0.1933]_2020-05-22.h5',
-    #     output_path='../../saved_model')
+    else:
+        q_reform = QueryReformulation(output_path='../../saved_model')
+        q_reform.build_model(model_name='cnn',  # 'cnn', 'lstm', 'bilstm'
+                             query_dim=query_sequence.shape[1],
+                             terms_dim=terms_sequence.shape[1],
+                             output_dim=terms_sequence.shape[1],
+                             word_embedding=preprocessor.word_embedding)
 
     q_reform.train_model(query_objs=trn_query_objs,
                          query_sequence=trn_query_sequence, terms_sequence=trn_terms_sequence,
-                         candidate_terms=trn_candidate_terms, epochs=20, batch_size=4)
+                         candidate_terms=trn_candidate_terms, epochs=12, batch_size=4)
 
     avg_precision, avg_recall = q_reform.test_model(query_objs=tst_query_objs,
                                                     query_sequence=tst_query_sequence,

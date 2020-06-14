@@ -57,7 +57,8 @@ class Evaluate:
 
         reformulated_documents = self.search_engine.get_top_documents(query=reformulated_query, top_k=max_top_k)
 
-        print('[%4d/%d] %s -> %s' % (instance + 1, self.sample_size, query.query, reformulated_query))
+        print('[%4d/%d] - %s : %s -> %s' % (instance + 1, self.sample_size,
+                                            query.article.title, query.query, reformulated_query))
         for i, k in enumerate(self.k_list):
             base_precision, base_recall = query.calc_precision_recall(retrieved_documents=base_documents[:k])
             ref_precision, ref_recall = query.calc_precision_recall(retrieved_documents=reformulated_documents[:k])
@@ -84,7 +85,7 @@ class Evaluate:
 
 
 if __name__ == '__main__':
-    q_reform = QueryReformulation(model_path='../../saved_model/qr_lstm_model_[e1]_[p0.3279]_2020-05-26.h5')
+    q_reform = QueryReformulation(model_path='../../saved_model/qr_cnn_retrained_model_[p0.4104]_2020-06-14.h5')
 
     preprocessor = Preprocessor()
     preprocessor.load_data(path='../../query_reformulation_dataset')
